@@ -12,21 +12,21 @@
   html,body{margin:0;height:100%;background:#120c07;color:#f3e6d3;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden;overscroll-behavior:none}
   #app{position:relative;height:100vh;height:100dvh;width:min(100vw,calc(100dvh*9/16));margin:0 auto;display:flex;flex-direction:column;background:#2b1d12;
        padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-  #hud{padding:6px 8px 4px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+  #hud{padding:5px 6px 3px;display:flex;flex-direction:column;gap:3px;font-size:12px}
   .row{display:flex;gap:6px;align-items:center;justify-content:space-between}
-  .stat{background:#3d2a1a;border-radius:8px;padding:4px 7px;white-space:nowrap}
+  .stat{background:#3d2a1a;border-radius:8px;padding:3px 6px;white-space:nowrap}
   .stat b{color:#ffd27a}
   #queenBar{flex:1;height:10px;background:#3d2a1a;border-radius:6px;overflow:hidden;min-width:60px}
   #queenFill{height:100%;width:0;background:linear-gradient(90deg,#c58bff,#ff8be0)}
-  #info{min-height:20px;font-size:12px;color:#e9d6bb;display:flex;align-items:center;gap:6px}
+  #info{min-height:30px;font-size:11.5px;line-height:1.25;color:#e9d6bb;display:flex;align-items:center;gap:6px}
   #lifeBar{width:90px;height:8px;background:#3d2a1a;border-radius:4px;overflow:hidden;display:none}
   #lifeFill{height:100%;background:#7bd36b}
   #wrap{flex:1;position:relative;min-height:0}
   canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
   #toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(0,0,0,.75);padding:6px 12px;border-radius:14px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
   #toast.show{opacity:1}
-  #bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 8px 8px}
-  button{font:inherit;font-size:14px;font-weight:600;color:#f3e6d3;background:#4a3320;border:2px solid #6b4a2e;border-radius:12px;min-height:48px;padding:4px 2px;touch-action:manipulation}
+  #bar{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:5px 6px 8px}
+  button{font:inherit;font-size:13px;font-weight:600;color:#f3e6d3;background:#4a3320;border:2px solid #6b4a2e;border-radius:12px;min-height:48px;padding:4px 2px;touch-action:manipulation}
   button.on{background:#d79a3e;border-color:#ffd27a;color:#1d1209}
   button:active{transform:scale(.96)}
   #help{font-size:11px;color:#c9b393;text-align:center;padding:0 8px 4px;line-height:1.3}
@@ -37,482 +37,36 @@
   <div id="hud">
     <div class="row">
       <span class="stat">🐜 <b id="sAnts">0</b></span>
-      <span class="stat">💀 <b id="sCorpses">0</b></span>
-      <span class="stat">🕳️ disposed <b id="sDisposed">0</b></span>
+      <span class="stat">🥚 <b id="sEggs">0</b></span>
+      <span class="stat">🍃 <b id="sFood">0</b></span>
+      <span class="stat">🌤 out <b id="sOut">0</b></span>
       <span class="stat">⏱ <b id="sTime">0:00</b></span>
     </div>
-    <div class="row"><span style="font-size:12px">👑 Queen: next ant</span><div id="queenBar"><div id="queenFill"></div></div><span id="queenPct" style="font-size:12px;width:34px;text-align:right">0%</span></div>
+    <div class="row">
+      <span class="stat">💀 <b id="sCorpses">0</b></span>
+      <span class="stat">🕳 pit <b id="sDisposed">0</b></span>
+      <span class="stat">❓ lost <b id="sLost">0</b></span>
+      <span class="stat">🍽 starved <b id="sStarved">0</b></span>
+    </div>
+    <div class="row"><span style="font-size:12px">👑 next egg</span><div id="queenBar"><div id="queenFill"></div></div><span id="queenPct" style="font-size:11px;min-width:34px;text-align:right">0%</span></div>
     <div id="info"><span id="infoText">Tap an ant to select it.</span><div id="lifeBar"><div id="lifeFill"></div></div></div>
   </div>
   <div id="wrap"><canvas id="cv"></canvas><div id="toast"></div></div>
-  <div id="help">Ants: tap ant / drag box to select → tap tunnel to move, tap 💀 to haul it to the pit. Dig/Fill: paint with finger.</div>
+  <div id="help">Select ants (tap / drag box) → tap tunnel = move, ⛏ mark = dig, grass = forage, 💀 = haul. Dig/Fill/Egg: paint with finger.</div>
   <div id="bar">
     <button id="bAnts" class="on">🐜 Ants</button>
     <button id="bDig">⛏️ Dig</button>
     <button id="bFill">🧱 Fill</button>
+    <button id="bEgg">🥚 Egg</button>
     <button id="bSpeed">▶ 1x</button>
-    <button id="bAll">Select all</button>
+    <button id="bAll">All</button>
+    <button id="bNone">None</button>
+    <button id="bAuto">🤖 Auto</button>
     <button id="bHaul">💀 Haul</button>
-    <button id="bNone">Deselect</button>
     <button id="bNew">↺ New</button>
   </div>
 </div>
-<script>
-(() => {
-'use strict';
-// ---------- constants ----------
-const COLS = 20, ROWS = 32, SURFACE = 3;      // rows 0..2 are sky/grass (not diggable)
-const SOIL = 0, TUNNEL = 1, QUEEN = 2, PIT = 3, ROCK = 4;
-const ANT_SPEED = 3.2;          // cells / game-second
-const SPAWN_TIME = 8;           // game-seconds per new ant
-const LIFE_MIN = 60, LIFE_MAX = 120;
-const MAX_ANTS = 60;
-
-const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-const $ = id => document.getElementById(id);
-
-let S; // game state
-let nextId = 1;
-function rand(a, b) { return a + Math.random() * (b - a); }
-
-function newGame() {
-  nextId = 1;
-  const grid = new Uint8Array(COLS * ROWS);
-  S = { grid, ants: [], corpses: [], disposed: 0, deaths: 0, born: 0, spawnT: 0, time: 0, speed: 1,
-        tool: 'ants', queen: { c: 10, r: 12 }, toastT: 0 };
-  // a few rocks for texture
-  const set = (c, r, v) => { if (c >= 0 && c < COLS && r >= SURFACE && r < ROWS) grid[r * COLS + c] = v; };
-  // entrance shaft
-  for (let r = SURFACE; r <= 10; r++) set(10, r, TUNNEL);
-  // queen chamber
-  for (let r = 11; r <= 13; r++) for (let c = 8; c <= 12; c++) set(c, r, QUEEN);
-  // main gallery
-  for (let c = 3; c <= 16; c++) set(c, 12, TUNNEL);
-  for (let c = 8; c <= 12; c++) set(c, 12, QUEEN);
-  // shaft down to the pit
-  for (let r = 12; r <= 22; r++) set(4, r, TUNNEL);
-  for (let c = 2; c <= 6; c++) set(c, 23, TUNNEL);
-  for (let c = 3; c <= 5; c++) set(c, 24, PIT);
-  // side gallery
-  for (let r = 12; r <= 18; r++) set(16, r, TUNNEL);
-  for (let c = 12; c <= 17; c++) set(c, 18, TUNNEL);
-  // rocks (not diggable)
-  [[14,7],[15,7],[7,20],[8,20],[12,26],[13,26],[13,27],[17,24],[1,15],[9,29],[10,29]].forEach(([c,r]) => set(c, r, ROCK));
-  // starting ants
-  const spots = [[9,12],[11,12],[6,12],[14,12],[16,15],[4,16]];
-  spots.forEach(([c, r]) => { const a = makeAnt(c, r); a.age = rand(0.05, 0.55) * a.life; S.ants.push(a); });
-  S.corpses.push({ id: nextId++, x: 14.5, y: 18.5, claimedBy: null, carriedBy: null });
-  S.corpses.push({ id: nextId++, x: 16.5, y: 13.5, claimedBy: null, carriedBy: null });
-  if (selBox) selBox = null;
-}
-
-function makeAnt(c, r) {
-  return { id: nextId++, x: c + 0.5, y: r + 0.5, path: [], target: null, age: 0, life: rand(LIFE_MIN, LIFE_MAX),
-           selected: false, hold: false, wanderT: rand(1, 4), task: null, carry: null, heading: 0, step: Math.random() * 6 };
-}
-
-// ---------- grid helpers ----------
-const inB = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS;
-const cell = (c, r) => inB(c, r) ? S.grid[r * COLS + c] : ROCK;
-const walk = (c, r) => inB(c, r) && r >= SURFACE && (cell(c, r) === TUNNEL || cell(c, r) === QUEEN || cell(c, r) === PIT);
-const cOf = e => Math.floor(e.x), rOf = e => Math.floor(e.y);
-const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
-
-// BFS from (sc,sr) until goal(c,r) is true. Returns array of [c,r] cells excluding start, or null.
-function bfs(sc, sr, goal, avoidPit = true) {
-  if (!walk(sc, sr)) return null;
-  if (goal(sc, sr)) return [];
-  const prev = new Int32Array(COLS * ROWS).fill(-2);
-  const q = [sr * COLS + sc]; prev[q[0]] = -1;
-  for (let h = 0; h < q.length; h++) {
-    const i = q[h], c = i % COLS, r = (i / COLS) | 0;
-    for (const [dc, dr] of DIRS) {
-      const nc = c + dc, nr = r + dr, ni = nr * COLS + nc;
-      if (!walk(nc, nr) || prev[ni] !== -2) continue;
-      prev[ni] = i;
-      if (goal(nc, nr)) {
-        const out = []; let k = ni;
-        while (k !== -1 && k !== q[0]) { out.push([k % COLS, (k / COLS) | 0]); k = prev[k]; }
-        return out.reverse();
-      }
-      if (avoidPit && cell(nc, nr) === PIT) continue; // don't walk through the pit
-      q.push(ni);
-    }
-  }
-  return null;
-}
-function pathTo(a, c, r) { return bfs(nextCell(a)[0], nextCell(a)[1], (x, y) => x === c && y === r); }
-// the cell the ant is currently heading into (or standing on)
-function nextCell(a) { return a.path.length ? a.path[0] : [cOf(a), rOf(a)]; }
-
-// ---------- orders ----------
-function orderMove(ants, c, r) {
-  if (!walk(c, r)) { toast(r < SURFACE ? 'Ants stay underground' : 'Solid soil – dig a tunnel there first'); return 0; }
-  let ok = 0;
-  for (const a of ants) {
-    const p = pathTo(a, c, r);
-    if (p) { releaseTask(a); setPath(a, p); a.target = [c, r]; a.hold = true; ok++; }
-  }
-  if (!ok) toast('No tunnel route to that spot');
-  else if (ok < ants.length) toast(`${ants.length - ok} ant(s) can't reach that spot`);
-  return ok;
-}
-function setPath(a, p) {
-  // keep the in-progress step so the ant never leaves the tunnel line
-  const cur = a.path.length ? [a.path[0]] : [];
-  if (cur.length && p.length && p[0][0] === cur[0][0] && p[0][1] === cur[0][1]) a.path = p; else a.path = cur.concat(p);
-}
-function releaseTask(a) {
-  if (a.task && a.task.type === 'fetch') { const k = S.corpses.find(k => k.id === a.task.corpse); if (k && k.claimedBy === a.id) k.claimedBy = null; }
-  a.task = null;
-}
-function assignHaul(a, k) {
-  if (a.carry) { toast('That ant is already carrying a body'); return false; }
-  const p = bfs(nextCell(a)[0], nextCell(a)[1], (x, y) => x === cOf(k) && y === rOf(k));
-  if (!p) return false;
-  releaseTask(a);
-  if (k.claimedBy) { const o = S.ants.find(o => o.id === k.claimedBy); if (o) o.task = null; }
-  k.claimedBy = a.id; a.task = { type: 'fetch', corpse: k.id }; a.hold = true; setPath(a, p); a.target = [cOf(k), rOf(k)];
-  return true;
-}
-function deliverToPit(a) {
-  const p = bfs(nextCell(a)[0], nextCell(a)[1], (x, y) => cell(x, y) === PIT);
-  if (p) { setPath(a, p); a.task = { type: 'deliver' }; a.target = p.length ? p[p.length - 1] : nextCell(a); return true; }
-  toast('No tunnel route to the pit!'); a.task = null; return false;
-}
-// tap a corpse: closest selected free ant goes for it
-function haulCorpse(k, pool) {
-  let best = null, bl = 1e9;
-  for (const a of pool) {
-    if (a.carry) continue;
-    const p = bfs(nextCell(a)[0], nextCell(a)[1], (x, y) => x === cOf(k) && y === rOf(k));
-    if (p && p.length < bl) { bl = p.length; best = a; }
-  }
-  if (best && assignHaul(best, k)) return best;
-  return null;
-}
-function haulAll() {
-  const sel = S.ants.filter(a => a.selected);
-  const pool = sel.length ? sel : S.ants;
-  let n = 0;
-  for (const k of S.corpses) {
-    if (k.carriedBy || k.claimedBy) continue;
-    const free = pool.filter(a => !a.carry && !(a.task && a.task.type));
-    if (!free.length) break;
-    if (haulCorpse(k, free)) n++;
-  }
-  toast(n ? `${n} ant(s) hauling bodies to the pit` : (S.corpses.length ? 'No free ant can reach a body' : 'No bodies to haul'));
-  return n;
-}
-
-// ---------- simulation ----------
-function step(dt) {
-  S.time += dt;
-  // queen
-  S.spawnT += dt;
-  if (S.spawnT >= SPAWN_TIME) {
-    S.spawnT -= SPAWN_TIME;
-    if (S.ants.length < MAX_ANTS) {
-      const q = S.queen, opts = [[q.c - 1, q.r + 1], [q.c + 1, q.r + 1], [q.c, q.r + 1], [q.c - 2, q.r], [q.c + 2, q.r]].filter(([c, r]) => walk(c, r));
-      const [c, r] = opts[(Math.random() * opts.length) | 0] || [q.c, q.r];
-      S.ants.push(makeAnt(c, r)); S.born++;
-    }
-  }
-  // ants
-  for (let i = S.ants.length - 1; i >= 0; i--) {
-    const a = S.ants[i];
-    a.age += dt;
-    if (a.age >= a.life) { die(a, i); continue; }
-    moveAnt(a, dt);
-  }
-}
-function die(a, i) {
-  releaseTask(a);
-  if (a.carry) { const k = S.corpses.find(k => k.id === a.carry); if (k) { k.carriedBy = null; k.claimedBy = null; k.x = cOf(a) + 0.5; k.y = rOf(a) + 0.5; } }
-  S.ants.splice(i, 1);
-  S.corpses.push({ id: nextId++, x: cOf(a) + 0.5, y: rOf(a) + 0.5, claimedBy: null, carriedBy: null, heading: a.heading });
-  S.deaths++;
-}
-function moveAnt(a, dt) {
-  let budget = ANT_SPEED * dt;
-  while (budget > 0) {
-    if (!a.path.length) { arrived(a); if (!a.path.length) break; }
-    const [nc, nr] = a.path[0];
-    if (!walk(nc, nr)) { // tunnel got filled in front of us -> re-route
-      a.path = [];
-      const t = a.target;
-      if (t) { const p = bfs(cOf(a), rOf(a), (x, y) => x === t[0] && y === t[1]); if (p) { a.path = p; continue; } }
-      a.target = null; releaseTask(a); break;
-    }
-    const tx = nc + 0.5, ty = nr + 0.5, dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy);
-    if (d > 1e-6) a.heading = Math.atan2(dy, dx);
-    if (d <= budget) { a.x = tx; a.y = ty; budget -= d; a.path.shift(); onEnter(a, nc, nr); }
-    else { a.x += dx / d * budget; a.y += dy / d * budget; budget = 0; }
-    a.step += dt * 14;
-  }
-  if (!a.path.length && !a.task && !a.hold) {
-    a.wanderT -= dt;
-    if (a.wanderT <= 0) {
-      a.wanderT = rand(1.5, 5);
-      // stroll to a random tunnel cell a few steps away (idle ants explore the nest)
-      const reach = [], seen = new Set();
-      bfs(cOf(a), rOf(a), (x, y) => { const k = y * COLS + x; if (!seen.has(k) && cell(x, y) !== PIT) { seen.add(k); reach.push([x, y]); } return false; });
-      const near = reach.filter(([x, y]) => Math.abs(x - cOf(a)) + Math.abs(y - rOf(a)) <= 7);
-      if (near.length) { const [x, y] = near[(Math.random() * near.length) | 0]; const p = bfs(cOf(a), rOf(a), (u, v) => u === x && v === y); if (p) a.path = p; }
-    }
-  }
-  if (a.carry) { const k = S.corpses.find(k => k.id === a.carry); if (k) { k.x = a.x; k.y = a.y - 0.25; } }
-}
-function onEnter(a, c, r) {
-  if (a.carry && cell(c, r) === PIT) { // instant disposal
-    const idx = S.corpses.findIndex(k => k.id === a.carry);
-    if (idx >= 0) { S.corpses.splice(idx, 1); S.disposed++; splash(c, r); }
-    a.carry = null; a.task = null; a.target = null; a.path = [];
-    // step back out of the pit so it doesn't block
-    const out = DIRS.map(([dc, dr]) => [c + dc, r + dr]).find(([x, y]) => walk(x, y) && cell(x, y) !== PIT);
-    if (out) a.path = [out];
-  }
-}
-function arrived(a) {
-  if (a.task && a.task.type === 'fetch') {
-    const k = S.corpses.find(k => k.id === a.task.corpse);
-    if (k && !k.carriedBy && cOf(k) === cOf(a) && rOf(k) === rOf(a)) {
-      k.carriedBy = a.id; k.claimedBy = a.id; a.carry = k.id; deliverToPit(a);
-    } else if (k && !k.carriedBy) { assignHaul(a, k) || (a.task = null); }
-    else a.task = null;
-    return;
-  }
-  if (a.task && a.task.type === 'deliver') { // got stuck somewhere
-    if (a.carry) deliverToPit(a); else a.task = null;
-    return;
-  }
-  a.target = null;
-}
-
-// ---------- effects ----------
-const fx = [];
-function splash(c, r) { fx.push({ c, r, t: 0 }); }
-let toastTimer;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1600); }
-
-// ---------- view ----------
-let CS = 20, OX = 0, OY = 0, DPR = 1;
-function resize() {
-  const w = cv.clientWidth, h = cv.clientHeight; DPR = Math.min(window.devicePixelRatio || 1, 3);
-  cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
-  CS = Math.min(w / COLS, h / ROWS); OX = (w - CS * COLS) / 2; OY = (h - CS * ROWS) / 2;
-}
-const toScreen = (x, y) => [OX + x * CS, OY + y * CS];
-const toGrid = (px, py) => [(px - OX) / CS, (py - OY) / CS];
-// noise for soil texture
-const noise = new Float32Array(COLS * ROWS).map(() => Math.random());
-
-function draw() {
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const w = cv.clientWidth, h = cv.clientHeight;
-  ctx.fillStyle = '#1a110a'; ctx.fillRect(0, 0, w, h);
-  // sky + grass
-  const [sx, sy] = toScreen(0, 0);
-  const g = ctx.createLinearGradient(0, sy, 0, sy + CS * SURFACE);
-  g.addColorStop(0, '#7ec8f0'); g.addColorStop(1, '#bfe6f7');
-  ctx.fillStyle = g; ctx.fillRect(sx, sy, CS * COLS, CS * (SURFACE - 0.35));
-  ctx.fillStyle = '#4f9a3a'; ctx.fillRect(sx, sy + CS * (SURFACE - 0.35), CS * COLS, CS * 0.35);
-  // grid
-  for (let r = SURFACE; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-    const v = cell(c, r), [x, y] = toScreen(c, r), n = noise[r * COLS + c];
-    const depth = (r - SURFACE) / (ROWS - SURFACE);
-    if (v === SOIL) ctx.fillStyle = `hsl(28,${42 - depth * 10}%,${36 - depth * 12 + n * 5}%)`;
-    else if (v === ROCK) ctx.fillStyle = `hsl(30,6%,${40 + n * 8}%)`;
-    else if (v === QUEEN) ctx.fillStyle = `hsl(300,18%,${18 + n * 3}%)`;
-    else if (v === PIT) ctx.fillStyle = '#050302';
-    else ctx.fillStyle = `hsl(30,30%,${15 + n * 3}%)`;
-    ctx.fillRect(x, y, CS + 0.6, CS + 0.6);
-    if (v === SOIL && n > 0.82) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x + CS * .3, y + CS * .4, CS * .18, CS * .18); }
-    if (v === ROCK) { ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.strokeRect(x + 1, y + 1, CS - 2, CS - 2); }
-  }
-  // pit glow + label
-  const pits = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (cell(c, r) === PIT) pits.push([c, r]);
-  if (pits.length) {
-    const [px, py] = toScreen(pits[0][0], pits[0][1] + 1);
-    ctx.fillStyle = '#ffb36b'; ctx.font = `bold ${Math.max(10, CS * 0.55)}px system-ui`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText(`PIT · ${S.disposed}`, px, py + 2);
-  }
-  for (const f of fx) {
-    const [x, y] = toScreen(f.c + 0.5, f.r + 0.5);
-    ctx.strokeStyle = `rgba(255,170,90,${1 - f.t})`; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y, CS * (0.3 + f.t * 1.2), 0, Math.PI * 2); ctx.stroke();
-  }
-  // queen
-  { const [x, y] = toScreen(S.queen.c + 0.5, S.queen.r + 0.5); drawAnt(x, y, Math.PI, CS * 1.9, '#5a1f4f', '#8b3a7a', false, S.time * 2);
-    ctx.fillStyle = '#ffd27a'; ctx.font = `${CS * 0.8}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('👑', x, y - CS * 0.45);
-    // spawn ring
-    ctx.strokeStyle = '#ff8be0'; ctx.lineWidth = 2; ctx.beginPath();
-    ctx.arc(x, y, CS * 1.25, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (S.spawnT / SPAWN_TIME)); ctx.stroke(); }
-  // corpses
-  for (const k of S.corpses) {
-    const [x, y] = toScreen(k.x, k.y);
-    drawAnt(x, y, k.heading || 0, CS * 1.1, '#6f6a64', '#8d8780', true, 0);
-    if (!k.carriedBy) { ctx.font = `${CS * 0.5}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('💀', x, y - CS * 0.2); }
-    if (k.claimedBy && !k.carriedBy) { ctx.strokeStyle = '#ffb36b'; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(x, y, CS * 0.55, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
-  }
-  // ants
-  for (const a of S.ants) {
-    const [x, y] = toScreen(a.x, a.y);
-    if (a.selected) { ctx.fillStyle = 'rgba(255,215,90,.25)'; ctx.strokeStyle = '#ffd75a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, CS * 0.62, 0, 7); ctx.fill(); ctx.stroke(); }
-    drawAnt(x, y, a.heading, CS * 1.15, '#1b0f08', '#3a2112', false, a.step);
-    // life bar
-    const f = 1 - a.age / a.life, bw = CS * 0.8;
-    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x - bw / 2, y - CS * 0.62, bw, 3);
-    ctx.fillStyle = f > 0.5 ? '#7bd36b' : f > 0.2 ? '#e7c14a' : '#e05a4a'; ctx.fillRect(x - bw / 2, y - CS * 0.62, bw * f, 3);
-  }
-  // selected destinations
-  for (const a of S.ants) if (a.selected && a.target && a.path.length) {
-    const [x, y] = toScreen(a.target[0] + 0.5, a.target[1] + 0.5);
-    ctx.strokeStyle = 'rgba(255,215,90,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 5, y - 5); ctx.lineTo(x + 5, y + 5); ctx.moveTo(x + 5, y - 5); ctx.lineTo(x - 5, y + 5); ctx.stroke();
-  }
-  // selection box
-  if (selBox) {
-    ctx.fillStyle = 'rgba(255,215,90,.15)'; ctx.strokeStyle = '#ffd75a'; ctx.lineWidth = 1.5;
-    const x = Math.min(selBox.x0, selBox.x1), y = Math.min(selBox.y0, selBox.y1), bw = Math.abs(selBox.x1 - selBox.x0), bh = Math.abs(selBox.y1 - selBox.y0);
-    ctx.fillRect(x, y, bw, bh); ctx.strokeRect(x, y, bw, bh);
-  }
-}
-function drawAnt(x, y, ang, size, c1, c2, dead, phase) {
-  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); if (dead) ctx.scale(1, -1);
-  const s = size / 2;
-  ctx.strokeStyle = c1; ctx.lineWidth = Math.max(1, s * 0.09);
-  for (let i = -1; i <= 1; i++) { // legs
-    const sw = dead ? 0.4 : Math.sin(phase + i * 2) * 0.35;
-    ctx.beginPath(); ctx.moveTo(i * s * 0.25, 0); ctx.lineTo(i * s * 0.25 + sw * s * 0.4, -s * 0.55); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(i * s * 0.25, 0); ctx.lineTo(i * s * 0.25 - sw * s * 0.4, s * 0.55); ctx.stroke();
-  }
-  ctx.fillStyle = c1;
-  ctx.beginPath(); ctx.ellipse(-s * 0.55, 0, s * 0.38, s * 0.28, 0, 0, 7); ctx.fill();      // abdomen
-  ctx.fillStyle = c2;
-  ctx.beginPath(); ctx.ellipse(0, 0, s * 0.22, s * 0.16, 0, 0, 7); ctx.fill();               // thorax
-  ctx.fillStyle = c1;
-  ctx.beginPath(); ctx.arc(s * 0.42, 0, s * 0.2, 0, 7); ctx.fill();                          // head
-  ctx.beginPath(); ctx.moveTo(s * 0.55, -s * 0.08); ctx.lineTo(s * 0.85, -s * 0.3); ctx.moveTo(s * 0.55, s * 0.08); ctx.lineTo(s * 0.85, s * 0.3); ctx.stroke();
-  ctx.restore();
-}
-
-// ---------- HUD ----------
-function hud() {
-  $('sAnts').textContent = S.ants.length; $('sCorpses').textContent = S.corpses.length; $('sDisposed').textContent = S.disposed;
-  const t = S.time | 0; $('sTime').textContent = `${(t / 60) | 0}:${String(t % 60).padStart(2, '0')}`;
-  const p = S.ants.length >= MAX_ANTS ? 0 : S.spawnT / SPAWN_TIME;
-  $('queenFill').style.width = (p * 100).toFixed(1) + '%'; $('queenPct').textContent = S.ants.length >= MAX_ANTS ? 'full' : Math.floor(p * 100) + '%';
-  const sel = S.ants.filter(a => a.selected), lb = $('lifeBar');
-  if (sel.length === 1) {
-    const a = sel[0], f = 1 - a.age / a.life;
-    $('infoText').textContent = `Ant #${a.id}${a.carry ? ' (carrying body)' : a.task ? ' (fetching body)' : ''} · life ${a.age | 0}s / ${a.life | 0}s`;
-    lb.style.display = 'block'; $('lifeFill').style.width = (f * 100) + '%'; $('lifeFill').style.background = f > 0.5 ? '#7bd36b' : f > 0.2 ? '#e7c14a' : '#e05a4a';
-  } else {
-    lb.style.display = 'none';
-    $('infoText').textContent = sel.length ? `${sel.length} ants selected – tap a tunnel to send them, or 💀 to haul` :
-      S.tool === 'ants' ? 'Tap an ant (or drag a box) to select.' : S.tool === 'dig' ? 'Dig: drag a finger over soil to carve tunnels.' : 'Fill: drag over tunnels to fill them back in.';
-  }
-}
-
-// ---------- input ----------
-let ptr = null, selBox = null;
-function setTool(t) { S.tool = t; ['Ants', 'Dig', 'Fill'].forEach(n => $('b' + n).classList.toggle('on', t === n.toLowerCase())); }
-function paint(px, py) {
-  const [gx, gy] = toGrid(px, py), c = Math.floor(gx), r = Math.floor(gy);
-  if (!inB(c, r) || r < SURFACE) return;
-  const v = cell(c, r);
-  if (S.tool === 'dig') { if (v === SOIL) S.grid[r * COLS + c] = TUNNEL; else if (v === ROCK && !ptr.warned) { toast('Rock is too hard to dig'); ptr.warned = 1; } }
-  else if (S.tool === 'fill' && v === TUNNEL) {
-    // never bury an ant or corpse
-    const busy = S.ants.some(a => (cOf(a) === c && rOf(a) === r) || (a.path[0] && a.path[0][0] === c && a.path[0][1] === r)) ||
-                 S.corpses.some(k => cOf(k) === c && rOf(k) === r);
-    if (busy) { if (!ptr.warned) { toast("Can't fill on top of an ant or body"); ptr.warned = 1; } return; }
-    S.grid[r * COLS + c] = SOIL;
-  }
-}
-function paintLine(x0, y0, x1, y1) { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (CS / 3))); for (let i = 1; i <= n; i++) paint(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n); }
-function pos(e) { const b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
-cv.addEventListener('pointerdown', e => {
-  // a new touch always starts a fresh gesture (guards against a lost pointerup leaving input stuck)
-  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-  const [x, y] = pos(e); selBox = null;
-  ptr = { id: e.pointerId, x0: x, y0: y, x, y, moved: false };
-  if (S.tool !== 'ants') paint(x, y);
-  e.preventDefault();
-});
-cv.addEventListener('pointermove', e => {
-  if (!ptr || e.pointerId !== ptr.id) return; const [x, y] = pos(e);
-  if (S.tool !== 'ants') paintLine(ptr.x, ptr.y, x, y);
-  else if (ptr.moved || Math.hypot(x - ptr.x0, y - ptr.y0) > Math.max(12, CS * 0.7)) { ptr.moved = true; selBox = { x0: ptr.x0, y0: ptr.y0, x1: x, y1: y }; }
-  ptr.x = x; ptr.y = y; e.preventDefault();
-});
-const endPtr = e => {
-  if (!ptr || e.pointerId !== ptr.id) return;
-  if (S.tool === 'ants' && e.type === 'pointerup') { if (ptr.moved && selBox) boxSelect(); else tap(ptr.x0, ptr.y0); }
-  ptr = null; selBox = null;
-};
-cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
-cv.addEventListener('lostpointercapture', e => { if (ptr && e.pointerId === ptr.id) { ptr = null; selBox = null; } });
-cv.addEventListener('contextmenu', e => e.preventDefault());
-
-function boxSelect() {
-  const [ax, ay] = toGrid(Math.min(selBox.x0, selBox.x1), Math.min(selBox.y0, selBox.y1));
-  const [bx, by] = toGrid(Math.max(selBox.x0, selBox.x1), Math.max(selBox.y0, selBox.y1));
-  let n = 0; S.ants.forEach(a => { a.selected = a.x >= ax && a.x <= bx && a.y >= ay && a.y <= by; if (a.selected) n++; });
-  toast(n ? `${n} ant(s) selected` : 'No ants in that box');
-}
-function nearest(list, gx, gy, rad) { let best = null, bd = rad; for (const o of list) { const d = Math.hypot(o.x - gx, o.y - gy); if (d < bd) { bd = d; best = o; } } return best; }
-function tap(px, py) {
-  const [gx, gy] = toGrid(px, py), sel = S.ants.filter(a => a.selected);
-  const ant = nearest(S.ants, gx, gy, 0.9);
-  const corpse = nearest(S.corpses.filter(k => !k.carriedBy), gx, gy, 0.9);
-  if (corpse && sel.length && (!ant || Math.hypot(corpse.x - gx, corpse.y - gy) <= Math.hypot(ant.x - gx, ant.y - gy) || ant.selected)) {
-    const a = haulCorpse(corpse, sel);
-    toast(a ? `Ant #${a.id} will haul the body to the pit` : 'No selected free ant can reach that body');
-    return;
-  }
-  if (ant) { ant.selected = !ant.selected; return; }
-  if (corpse) { toast('Select an ant first, then tap the body'); return; }
-  const c = Math.floor(gx), r = Math.floor(gy);
-  if (!inB(c, r)) { sel.forEach(a => a.selected = false); return; }
-  if (sel.length) orderMove(sel, c, r);
-  else if (Math.hypot(gx - S.queen.c - .5, gy - S.queen.r - .5) < 1.2) toast(`Queen: next ant in ${Math.ceil(SPAWN_TIME - S.spawnT)}s`);
-  else toast('Select ants first (tap one or drag a box)');
-}
-
-// Buttons fire on pointerdown: instant on touch and immune to the browser swallowing
-// a 'click' right after a canvas gesture (double-tap detection).
-function btn(id, fn) { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); fn(); });
-  el.addEventListener('click', e => { if (e.detail === 0) fn(); }); /* keyboard activation */ }
-btn('bAnts', () => setTool('ants'));
-btn('bDig', () => setTool('dig'));
-btn('bFill', () => setTool('fill'));
-btn('bSpeed', () => { S.speed = S.speed === 1 ? 4 : 1; $('bSpeed').textContent = `▶ ${S.speed}x`; $('bSpeed').classList.toggle('on', S.speed > 1); });
-btn('bAll', () => { S.ants.forEach(a => a.selected = true); setTool('ants'); toast(`${S.ants.length} ants selected`); });
-btn('bNone', () => S.ants.forEach(a => a.selected = false));
-btn('bHaul', () => { setTool('ants'); haulAll(); });
-btn('bNew', () => { if (confirm('Start a new colony?')) { const sp = S.speed; newGame(); S.speed = sp; } });
-
-// ---------- loop ----------
-let last = performance.now();
-function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  let sim = dt * S.speed * (window.__timeScale ?? 1);
-  while (sim > 0) { const d = Math.min(sim, 0.05); step(d); sim -= d; }
-  for (let i = fx.length - 1; i >= 0; i--) { fx[i].t += dt * 1.5; if (fx[i].t >= 1) fx.splice(i, 1); }
-  draw(); hud();
-  requestAnimationFrame(frame);
-}
-window.addEventListener('resize', resize);
-newGame(); resize(); requestAnimationFrame(frame);
-
-// test / debug hooks (harmless for players)
-window.game = {
-  get S() { return S; }, get ptr() { return ptr; }, step, cell, walk, COLS, ROWS, SPAWN_TIME, PIT, TUNNEL, SOIL, QUEEN,
-  cellToClient(c, r) { const b = cv.getBoundingClientRect(); const [x, y] = toScreen(c + 0.5, r + 0.5); return [b.left + x, b.top + y]; },
-  posToClient(x, y) { const b = cv.getBoundingClientRect(); const [sx, sy] = toScreen(x, y); return [b.left + sx, b.top + sy]; },
-};
-})();
-</script>
+<script src="config.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
