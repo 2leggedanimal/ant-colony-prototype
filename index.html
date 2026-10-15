@@ -254,9 +254,11 @@ function moveAnt(a, dt) {
     a.wanderT -= dt;
     if (a.wanderT <= 0) {
       a.wanderT = rand(1.5, 5);
-      const c = cOf(a), r = rOf(a);
-      const opts = DIRS.map(([dc, dr]) => [c + dc, r + dr]).filter(([x, y]) => walk(x, y) && cell(x, y) !== PIT);
-      if (opts.length) a.path = [opts[(Math.random() * opts.length) | 0]];
+      // stroll to a random tunnel cell a few steps away (idle ants explore the nest)
+      const reach = [], seen = new Set();
+      bfs(cOf(a), rOf(a), (x, y) => { const k = y * COLS + x; if (!seen.has(k) && cell(x, y) !== PIT) { seen.add(k); reach.push([x, y]); } return false; });
+      const near = reach.filter(([x, y]) => Math.abs(x - cOf(a)) + Math.abs(y - rOf(a)) <= 7);
+      if (near.length) { const [x, y] = near[(Math.random() * near.length) | 0]; const p = bfs(cOf(a), rOf(a), (u, v) => u === x && v === y); if (p) a.path = p; }
     }
   }
   if (a.carry) { const k = S.corpses.find(k => k.id === a.carry); if (k) { k.x = a.x; k.y = a.y - 0.25; } }
@@ -495,7 +497,7 @@ btn('bNew', () => { if (confirm('Start a new colony?')) { const sp = S.speed; ne
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  let sim = dt * S.speed * (window.__timeScale || 1);
+  let sim = dt * S.speed * (window.__timeScale ?? 1);
   while (sim > 0) { const d = Math.min(sim, 0.05); step(d); sim -= d; }
   for (let i = fx.length - 1; i >= 0; i--) { fx[i].t += dt * 1.5; if (fx[i].t >= 1) fx.splice(i, 1); }
   draw(); hud();
